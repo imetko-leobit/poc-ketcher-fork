@@ -13,7 +13,6 @@ import ketcherReactTSConfig from '../packages/ketcher-react/tsconfig.json';
 import ketcherStandaloneTSConfig from '../packages/ketcher-standalone/tsconfig.json';
 import { envVariables as exampleEnv } from './config/webpack.config';
 import { INDIGO_WORKER_IMPORTS } from '../packages/ketcher-standalone/rollup.config';
-import commonjs from 'vite-plugin-commonjs';
 
 const dotEnv = loadEnv('development', '.', '');
 Object.assign(process.env, dotEnv, exampleEnv);
@@ -129,6 +128,8 @@ const getDefineValue = (value) => {
 const PROCESS_ENV_DEFINE_KEYS = [
   'API_PATH',
   'KETCHER_ENABLE_REDUX_LOGGER',
+  'LOCAL_INDIGO_URL',
+  'LOCAL_INDIGO_WASM_PATH',
   'MODE',
   'NODE_ENV',
   'PUBLIC_URL',
@@ -208,9 +209,35 @@ logger.warn = (msg, options) => {
   loggerWarn(msg, options);
 };
 
+const LOCAL_INDIGO_URL =
+  process.env.LOCAL_INDIGO_URL || 'http://localhost:8002';
+
+const getServerProxy = () => {
+  if (process.env.MODE === 'remote' || process.env.MODE === 'local-rest') {
+    const apiPrefix =
+      process.env.REACT_APP_API_PATH || process.env.API_PATH || '/v2';
+    return {
+      [apiPrefix]: {
+        target: LOCAL_INDIGO_URL,
+        changeOrigin: true,
+        secure: false,
+      },
+    };
+  }
+  return undefined;
+};
+
 export default defineConfig({
   server: {
     open: true,
+    proxy: getServerProxy(),
+  },
+  optimizeDeps: {
+    // indigo-ketcher: large WASM loader, triggers vite-plugin-commonjs stack overflow in regex.
+    // miew: ESM build (Miew.module.js) has a duplicate `default` export that rolldown rejects.
+    // Both are served at runtime via @fs/ path; miew is wrapped by vite-plugin-commonjs (see
+    // the filter option below that returns true for miew, overriding the node_modules skip).
+    exclude: ['indigo-ketcher', 'miew'],
   },
   css: {
     devSourcemap: true,
@@ -276,7 +303,10 @@ export default defineConfig({
       }),
     ),
     HtmlReplaceVitePlugin(),
-    commonjs(),
+    // vite-plugin-commonjs is disabled: its pre-bundle esbuild hook runs on every file during
+    // the optimizer's second discovery pass and hits a RangeError stack overflow on large CJS
+    // files (indigo-ketcher, miew). The require('raphael') in ketcher-core is already handled
+    // by the @rollup/plugin-replace above (require → await import) so this plugin is not needed.
   ],
   define: {
     ...processEnvDefines,
@@ -327,11 +357,21 @@ export default defineConfig({
       },
       {
         find: '_indigo-ketcher-import-alias_',
+        // MODE=local-wasm: the local Indigo build is installed in node_modules/indigo-ketcher
+        // via npm-install-local (see INDIGO_INTEGRATION.md). This alias always resolves
+        // to the indigo-ketcher package; the local-wasm swap happens at node_modules level.
         replacement: 'indigo-ketcher',
       },
       {
         find: '_indigo-worker-import-alias_',
         replacement: INDIGO_WORKER_IMPORTS.WASM_LOADER,
+      },
+      {
+        // miew is excluded from optimizeDeps because its ESM build (Miew.module.js) has a
+        // duplicate `default` export that rolldown rejects. Alias to the CJS build (Miew.js)
+        // so vite-plugin-commonjs wraps it correctly at serve time.
+        find: /^miew$/,
+        replacement: resolve(__dirname, '../node_modules/miew/dist/Miew.js'),
       },
     ],
   },

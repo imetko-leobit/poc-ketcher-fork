@@ -104,6 +104,8 @@ export interface AtomAttributes {
   implicitH?: number;
   implicitHCount?: number | null;
   initiallySelected?: initiallySelectedType;
+  /** RGB color as a packed integer (e.g. 0xFF0000 for red). Sourced from KET `color` field. */
+  color?: number;
 }
 
 export type AtomPropertiesInContextMenu = SubsetOfFields<
@@ -176,6 +178,7 @@ export class Atom extends BaseMicromoleculeEntity {
     stereoLabel: null,
     stereoParity: 0,
     implicitHCount: null,
+    color: undefined,
   };
 
   label: string;
@@ -210,6 +213,7 @@ export class Atom extends BaseMicromoleculeEntity {
   stereoParity: number;
   hasImplicitH?: boolean;
   pseudo!: string;
+  color?: number;
 
   /** @deprecated */
   get attpnt() {
@@ -289,6 +293,10 @@ export class Atom extends BaseMicromoleculeEntity {
       attributes.stereoParity,
       Atom.attrlist.stereoParity,
     );
+
+    if (typeof attributes.color === 'number') {
+      this.color = attributes.color;
+    }
 
     this.atomList = attributes.atomList
       ? new AtomList(attributes.atomList)

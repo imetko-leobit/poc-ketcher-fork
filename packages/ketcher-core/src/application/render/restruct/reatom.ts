@@ -1314,6 +1314,10 @@ class ReAtom extends ReObject {
   }
 }
 
+function colorNumberToHex(color: number): string {
+  return '#' + (color & 0xffffff).toString(16).padStart(6, '0');
+}
+
 function getStereoAtomColor(options, stereoLabel) {
   if (
     !stereoLabel ||
@@ -1555,6 +1559,11 @@ function buildLabel(
     if (atomColoring && element) {
       atom.color = ElementColor[label.text] ?? '#000';
     }
+  }
+
+  // Custom atom color (packed RGB integer) overrides element coloring
+  if (typeof atom.a.color === 'number') {
+    atom.color = colorNumberToHex(atom.a.color);
   }
 
   const shouldStyleLabel = usageInMacromolecule !== undefined;

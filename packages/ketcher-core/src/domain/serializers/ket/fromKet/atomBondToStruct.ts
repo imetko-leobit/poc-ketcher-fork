@@ -88,6 +88,10 @@ export function atomToStruct(source) {
   ifDef(params, 'exactChangeFlag', Number(Boolean(source.exactChangeFlag)));
   // implicit hydrogens
   ifDef(params, 'implicitHCount', source.implicitHCount);
+  // color (packed RGB integer)
+  if (typeof source.color === 'number') {
+    params.color = source.color;
+  }
 
   const newAtom = new Atom(params as AtomAttributes);
   newAtom.setInitiallySelected(source.selected);
@@ -121,6 +125,10 @@ export function bondToStruct(source, atomOffset = 0) {
   ifDef(params, 'begin', source.atoms[0] + atomOffset);
   ifDef(params, 'end', source.atoms[1] + atomOffset);
   ifDef(params, 'initiallySelected', source.selected);
+  // color (packed RGB integer)
+  if (typeof source.color === 'number') {
+    params.color = source.color;
+  }
 
   const newBond = new Bond(params as BondAttributes);
   newBond.setInitiallySelected(source.selected);

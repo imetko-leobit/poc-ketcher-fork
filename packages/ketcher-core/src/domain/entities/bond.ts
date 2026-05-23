@@ -41,6 +41,8 @@ export interface BondAttributes {
   endSuperatomAttachmentPointNumber?: number;
   beginSgroup?: SGroup;
   endSgroup?: SGroup;
+  /** RGB color as a packed integer (e.g. 0xFF0000 for red). Sourced from KET `color` field. */
+  color?: number;
 }
 
 export class Bond extends BaseMicromoleculeEntity {
@@ -90,6 +92,7 @@ export class Bond extends BaseMicromoleculeEntity {
     reactingCenterStatus: Bond.PATTERN.REACTING_CENTER.UNMARKED,
     cip: null,
     customQuery: null,
+    color: undefined,
   };
 
   begin: number;
@@ -113,6 +116,7 @@ export class Bond extends BaseMicromoleculeEntity {
   endSuperatomAttachmentPointNumber?: number;
   beginSgroup?: SGroup;
   endSgroup?: SGroup;
+  color?: number;
 
   constructor(attributes: BondAttributes) {
     super(attributes.initiallySelected);
@@ -149,6 +153,10 @@ export class Bond extends BaseMicromoleculeEntity {
     }
 
     this.center = new Vec2();
+
+    if (typeof attributes.color === 'number') {
+      this.color = attributes.color;
+    }
   }
 
   static getAttrHash(bond: Bond) {

@@ -1301,6 +1301,7 @@ function bondDouble(
   cisTrans: boolean,
   options: RenderOptions,
   isSnapping: boolean,
+  color = '#000',
 ) {
   // eslint-disable-line max-params
   return paper
@@ -1318,6 +1319,7 @@ function bondDouble(
       toFixed(b2.y),
     )
     .attr(options.lineattr)
+    .attr({ fill: color, stroke: color })
     .attr(isSnapping ? options.bondSnappingStyle : {});
 }
 
@@ -1328,6 +1330,7 @@ function bondSingleOrDouble(
   nSect: number,
   options: RenderOptions,
   isSnapping: boolean,
+  color = '#000',
 ) {
   // eslint-disable-line max-statements, max-params
   const a = halfBond1.p;
@@ -1351,6 +1354,7 @@ function bondSingleOrDouble(
   return paper
     .path(path)
     .attr(options.lineattr)
+    .attr({ fill: color, stroke: color })
     .attr(isSnapping ? options.bondSnappingStyle : {});
 }
 
@@ -1385,14 +1389,17 @@ function bondAromatic(
   bondShift: number,
   options: RenderOptions,
   isSnapping: boolean,
+  color = '#000',
 ) {
   const l1 = paper
     .path(paths[0])
     .attr(options.lineattr)
+    .attr({ fill: color, stroke: color })
     .attr(isSnapping ? options.bondSnappingStyle : {});
   const l2 = paper
     .path(paths[1])
     .attr(options.lineattr)
+    .attr({ fill: color, stroke: color })
     .attr(isSnapping ? options.bondSnappingStyle : {});
   if (bondShift !== undefined && bondShift !== null) {
     (bondShift > 0 ? l1 : l2).attr({ 'stroke-dasharray': '- ' });
@@ -1407,13 +1414,14 @@ function bondAny(
   halfBond2: HalfBond,
   options: RenderOptions,
   isSnapping: boolean,
+  color = '#000',
 ) {
   const a = halfBond1.p;
   const b = halfBond2.p;
   return paper
     .path(makeStroke(a, b))
     .attr(options.lineattr)
-    .attr({ 'stroke-dasharray': '- ' })
+    .attr({ fill: color, stroke: color, 'stroke-dasharray': '- ' })
     .attr(isSnapping ? options.bondSnappingStyle : {});
 }
 
@@ -1423,6 +1431,7 @@ function bondHydrogen(
   halfBond2: HalfBond,
   options: RenderOptions,
   isSnapping: boolean,
+  color = '#000',
 ) {
   const a = halfBond1.p;
   const b = halfBond2.p;
@@ -1430,6 +1439,8 @@ function bondHydrogen(
     .path(makeStroke(a, b))
     .attr(options.lineattr)
     .attr({
+      fill: color,
+      stroke: color,
       'stroke-dasharray': '.',
       'stroke-linecap': 'square',
     })
@@ -1442,6 +1453,7 @@ function bondDative(
   halfBond2: HalfBond,
   options: RenderOptions,
   isSnapping: boolean,
+  color = '#000',
 ) {
   const a = halfBond1.p;
   const b = halfBond2.p;
@@ -1462,7 +1474,7 @@ function bondDative(
   return paper
     .path(makeStroke(a, b))
     .attr(options.lineattr)
-    .attr({ 'arrow-end': 'block-midium-long' })
+    .attr({ fill: color, stroke: color, 'arrow-end': 'block-midium-long' })
     .attr(isSnapping ? options.bondSnappingStyle : {});
 }
 

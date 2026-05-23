@@ -131,6 +131,9 @@ function atomToKet(source, monomer?: BaseMonomer) {
   ifDef(result, 'invRet', source.invRet, 0);
   ifDef(result, 'exactChangeFlag', !!source.exactChangeFlag, false);
   ifDef(result, 'implicitHCount', source.implicitHCount);
+  if (typeof source.color === 'number') {
+    result['color'] = source.color;
+  }
   return result;
 }
 
@@ -165,6 +168,9 @@ function bondToKet(source) {
     ifDef(result, 'topology', source.topology, 0);
     ifDef(result, 'center', source.reactingCenterStatus, 0);
     ifDef(result, 'cip', source.cip, '');
+  }
+  if (typeof source.color === 'number') {
+    result['color'] = source.color;
   }
   ifDef(result, 'selected', source.getInitiallySelected());
   return result;

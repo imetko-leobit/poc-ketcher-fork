@@ -5,6 +5,10 @@
   "scripts": {
     "dev:standalone": "cross-env MODE=standalone vite",
     "dev:remote": "cross-env MODE=remote vite",
+    "dev:local-rest": "cross-env MODE=local-rest vite",
+    "dev:local-wasm": "npm run use-local-wasm && cross-env MODE=local-wasm vite",
+    "use-local-wasm": "node scripts/swap-indigo-wasm.mjs local",
+    "use-npm-wasm": "node scripts/swap-indigo-wasm.mjs npm",
     "start:standalone": "cross-env MODE=standalone react-app-rewired start",
     "start:remote": "cross-env MODE=remote react-app-rewired start",
     "init:build": "shx mkdir -p build",
