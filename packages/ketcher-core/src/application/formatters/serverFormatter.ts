@@ -98,25 +98,31 @@ export class ServerFormatter implements StructFormatter {
   ): {
     method: LayoutPromise | ConvertPromise;
     struct: string;
+    isLayout: boolean;
   } {
     if (this.#format === SupportedFormat.smiles) {
+      const usesLayout =
+        !SmilesFormatter.isContainsCoordinates(stringifiedStruct);
       return {
-        method: SmilesFormatter.isContainsCoordinates(stringifiedStruct)
-          ? this.#structService.convert
-          : this.#structService.layout,
+        method: usesLayout
+          ? this.#structService.layout.bind(this.#structService)
+          : this.#structService.convert.bind(this.#structService),
         struct: stringifiedStruct,
+        isLayout: usesLayout,
       };
     }
     const withCoords = getPropertiesByFormat(format).supportsCoords;
     if (withCoords) {
       return {
-        method: this.#structService.convert,
+        method: this.#structService.convert.bind(this.#structService),
         struct: stringifiedStruct,
+        isLayout: false,
       };
     }
     return {
-      method: this.#structService.layout,
+      method: this.#structService.layout.bind(this.#structService),
       struct: stringifiedStruct.trim(),
+      isLayout: true,
     };
   }
 
@@ -128,7 +134,7 @@ export class ServerFormatter implements StructFormatter {
       output_format: getPropertiesByFormat(SupportedFormat.ket).mime,
     };
 
-    const { method, struct } = this.getCallingMethod(
+    const { method, struct, isLayout } = this.getCallingMethod(
       stringifiedStruct,
       this.#format,
     );
@@ -137,7 +143,7 @@ export class ServerFormatter implements StructFormatter {
     try {
       const result = await method(data, this.#options);
       const parsedStruct = this.#ketSerializer.deserialize(result.struct);
-      if (method === this.#structService.layout) {
+      if (isLayout) {
         parsedStruct.rescale();
       }
       return parsedStruct;

@@ -233,10 +233,9 @@ export default defineConfig({
     proxy: getServerProxy(),
   },
   optimizeDeps: {
-    // indigo-ketcher: large WASM loader, triggers vite-plugin-commonjs stack overflow in regex.
+    // indigo-ketcher: large WASM loader (binaryWasm variant), triggers stack overflow if
+    //   esbuild pre-bundles it. Served at runtime via @fs/ path instead.
     // miew: ESM build (Miew.module.js) has a duplicate `default` export that rolldown rejects.
-    // Both are served at runtime via @fs/ path; miew is wrapped by vite-plugin-commonjs (see
-    // the filter option below that returns true for miew, overriding the node_modules skip).
     exclude: ['indigo-ketcher', 'miew'],
   },
   css: {
@@ -303,10 +302,29 @@ export default defineConfig({
       }),
     ),
     HtmlReplaceVitePlugin(),
-    // vite-plugin-commonjs is disabled: its pre-bundle esbuild hook runs on every file during
-    // the optimizer's second discovery pass and hits a RangeError stack overflow on large CJS
-    // files (indigo-ketcher, miew). The require('raphael') in ketcher-core is already handled
-    // by the @rollup/plugin-replace above (require → await import) so this plugin is not needed.
+    // Targeted CJS→ESM shim for ketcher-core's compiledSchema.js (module.exports pattern).
+    // Replaces vite-plugin-commonjs, which caused RangeError stack overflows on large
+    // CJS files (indigo-ketcher, miew) because isCommonjs() runs a String.replace regex
+    // before the user filter is checked — there is no safe way to skip large files in time.
+    // The require('raphael') in raphael-ext.ts is already handled by the replace plugin above.
+    {
+      name: 'ketcher-cjs-shim',
+      transform(code, id) {
+        const cleanId = id.split('?')[0];
+        if (
+          cleanId.endsWith('compiledSchema.js') &&
+          code.includes('module.exports')
+        ) {
+          return {
+            code: code
+              .replace(/^"use strict";\s*/, '')
+              .replace(/module\.exports\s*=\s*(\w+);/, 'export default $1;')
+              .replace(/module\.exports\.default\s*=\s*\w+;?/, ''),
+            map: null,
+          };
+        }
+      },
+    },
   ],
   define: {
     ...processEnvDefines,
@@ -357,14 +375,17 @@ export default defineConfig({
       },
       {
         find: '_indigo-ketcher-import-alias_',
-        // MODE=local-wasm: the local Indigo build is installed in node_modules/indigo-ketcher
-        // via npm-install-local (see INDIGO_INTEGRATION.md). This alias always resolves
-        // to the indigo-ketcher package; the local-wasm swap happens at node_modules level.
-        replacement: 'indigo-ketcher',
+        // Use the binaryWasm variant: separate .wasm file fetched at runtime via streaming
+        // instantiation. The monolithic base64-embedded build (indigo-ketcher default) causes
+        // worker OOM/crash during WebAssembly.instantiate() in browser workers.
+        replacement: resolve(
+          __dirname,
+          '../node_modules/indigo-ketcher/indigo-ketcher-separate-wasm.js',
+        ),
       },
       {
         find: '_indigo-worker-import-alias_',
-        replacement: INDIGO_WORKER_IMPORTS.WASM_LOADER,
+        replacement: INDIGO_WORKER_IMPORTS.OFF_MAIN_THREAD_PLUGIN,
       },
       {
         // miew is excluded from optimizeDeps because its ESM build (Miew.module.js) has a

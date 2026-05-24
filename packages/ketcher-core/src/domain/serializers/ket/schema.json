@@ -230,6 +230,11 @@
               "type": "string"
             }
           }
+        },
+        "color": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16777215
         }
       },
       "additionalProperties": false
